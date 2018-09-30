@@ -24,24 +24,25 @@ public final class Cell {
         this._clicked = clicked;
     }
 
-    public Cell(CellType type, boolean flagged, boolean clicked) {
+    public Cell(CellType type, int number, boolean flagged, boolean clicked) {
         this._type = type;
         this._flagged = flagged;
         this._clicked = clicked;
+        this._number = number;
     }
 
     public Cell click() throws Exception {
         if (_flagged) {
             throw new Exception("Can't click a flagged cell");
         }
-        return new Cell(_type, _flagged, true);
+        return new Cell(_type, _number, _flagged, true);
     }
 
     public Cell toggleFlagged() throws Exception {
         if (_clicked) {
             throw new Exception("Can't flag a clicked cell");
         }
-        return new Cell(_type, !_flagged, false);
+        return new Cell(_type, _number, !_flagged, false);
     }
 
     public CellType type() {

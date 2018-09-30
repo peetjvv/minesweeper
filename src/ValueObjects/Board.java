@@ -3,9 +3,7 @@ package ValueObjects;
 import Enums.BoardState;
 import Enums.CellType;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 /**
  *
@@ -26,7 +24,7 @@ public final class Board {
         // create an empty board
         for (int x = 0; x < cells.length; x++) {
             for (int y = 0; y < cells[x].length; y++) {
-                cells[x][y] = new Cell(CellType.Blank, false, false);
+                cells[x][y] = new Cell(CellType.Blank, 0, false, false);
             }
         }
 
@@ -49,7 +47,7 @@ public final class Board {
                 Collections.shuffle(yOrder);
                 for (int j = 0; j < yOrder.size(); j++) {
                     int y = yOrder.get(j);
-                    
+
                     if (numMinesPlacedSoFar == numMines) {
                         break;
                     }
@@ -61,7 +59,7 @@ public final class Board {
 
                     int rand = (int) (Math.random() * 50);
                     if (rand % 3 == 1) {
-                        cells[x][y] = new Cell(CellType.Mine, false, false);
+                        cells[x][y] = new Cell(CellType.Mine, -1, false, false);
                         numMinesPlacedSoFar++;
                     }
                 }
@@ -123,6 +121,7 @@ public final class Board {
     private Board(BoardState state, Cell[][] cells, int numMines) {
         this._state = state;
         this._cells = cells;
+        this._numMines = numMines;
     }
 
     public Board toggleFlagged(int x, int y) throws Exception {
@@ -142,30 +141,32 @@ public final class Board {
         }
 
         Board nextBoard = clone();
-        nextBoard._cells[x][y] = nextBoard._cells[x][y].click();
-        if (nextBoard._cells[x][y].type() == CellType.Mine) {
-            nextBoard._state = BoardState.Lost;
-        } else if (_cells[x][y].type() == CellType.Blank) {
+        if (nextBoard._cells[x][y].type() == CellType.Blank) {
             nextBoard.recursivelyClickSurroundingCells(x, y);
         } else {
-            ArrayList<Cell> openCells = openCells();
-            ArrayList<Cell> remainingMines = remainingMines();
-            if (openCells.isEmpty() && remainingMines.isEmpty()) {
-                nextBoard._state = BoardState.Won;
-            } else if (!remainingMines.isEmpty()) {
-                nextBoard._state = BoardState.InProgress;
+            nextBoard._cells[x][y] = nextBoard._cells[x][y].click();
+            if (nextBoard._cells[x][y].type() == CellType.Mine) {
+                nextBoard._state = BoardState.Lost;
             } else {
-                boolean containsNumbers = false;
-                for (int i = 0; i < openCells.size(); i++) {
-                    if (openCells.get(i).type() == CellType.Number) {
-                        containsNumbers = true;
-                        break;
-                    }
-                }
-                if (containsNumbers) {
+                ArrayList<Cell> openCells = openCells();
+                ArrayList<Cell> remainingMines = remainingMines();
+                if (openCells.isEmpty() && remainingMines.isEmpty()) {
+                    nextBoard._state = BoardState.Won;
+                } else if (!remainingMines.isEmpty()) {
                     nextBoard._state = BoardState.InProgress;
                 } else {
-                    nextBoard._state = BoardState.Won;
+                    boolean containsNumbers = false;
+                    for (int i = 0; i < openCells.size(); i++) {
+                        if (openCells.get(i).type() == CellType.Number) {
+                            containsNumbers = true;
+                            break;
+                        }
+                    }
+                    if (containsNumbers) {
+                        nextBoard._state = BoardState.InProgress;
+                    } else {
+                        nextBoard._state = BoardState.Won;
+                    }
                 }
             }
         }
@@ -199,7 +200,7 @@ public final class Board {
     // to keep immutibility, this method should be fired on the next board only
     private void recursivelyClickSurroundingCells(int x, int y) throws Exception {
         // out of bounds -> return
-        if (x == -1 || x == _cells.length || y == -1 || y == _cells[x].length) {
+        if (x <= -1 || x >= _cells.length || y <= -1 || y >= _cells[x].length || _cells[x][y].isClicked()) {
             return;
         }
 
@@ -213,7 +214,7 @@ public final class Board {
             return;
         }
 
-        // for some reason this is a mine cell, this shouldn't happen!
+        // check if we reached a mine for whatever reason
         if (thisCell.type() == CellType.Mine) {
             throw new Exception("For some reason the recursive click reached a mine! Will need to investigate this as it shouldn't happen.");
         }
@@ -226,12 +227,35 @@ public final class Board {
         recursivelyClickSurroundingCells(x, y + 1); // down
         recursivelyClickSurroundingCells(x - 1, y + 1); // down-left
         recursivelyClickSurroundingCells(x - 1, y); // left
-        recursivelyClickSurroundingCells(x + 1, y + 1); // up-left        
+        recursivelyClickSurroundingCells(x - 1, y - 1); // up-left
+    }
+
+    public Board clickFirstBlankCell() {
+        for (int x = 0; x < _cells.length; x++) {
+            for (int y = 0; y < _cells[x].length; y++) {
+                if (_cells[x][y].type() == CellType.Blank) {
+                    try {
+                        return click(x, y);
+                    } catch (Exception ex) {
+                        System.err.println(ex);
+                    }
+                }
+            }
+        }
+        return this;
     }
 
     public String toHiddenValuesString() {
         StringBuilder cellsString = new StringBuilder();
         for (int y = 0; y < _cells[0].length; y++) {
+            if (y == 0) {
+                cellsString.append("   ");
+                for (int x = 0; x < _cells.length; x++) {
+                    cellsString.append(" " + x + " ");
+                }
+                cellsString.append("\n");
+            }
+            cellsString.append(" " + y + " ");
             for (int x = 0; x < _cells.length; x++) {
                 cellsString.append(_cells[x][y].toHiddenValueString());
             }
@@ -252,6 +276,14 @@ public final class Board {
         int numFlags = 0;
         StringBuilder cellsString = new StringBuilder();
         for (int y = 0; y < _cells[0].length; y++) {
+            if (y == 0) {
+                cellsString.append("   ");
+                for (int x = 0; x < _cells.length; x++) {
+                    cellsString.append(" " + x + " ");
+                }
+                cellsString.append("\n");
+            }
+            cellsString.append(" " + y + " ");
             for (int x = 0; x < _cells.length; x++) {
                 Cell thisCell = _cells[x][y];
                 if (thisCell.isFlagged()) {
