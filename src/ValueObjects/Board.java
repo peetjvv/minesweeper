@@ -15,25 +15,42 @@ public final class Board {
     private int _numMines;
 
     public Board(int numMines) {
-        int numSquares = numMines * 5;
-        int totalX = numSquares / 7;
+        int numSquares = numMines * 4;
+        int totalX = (int) Math.sqrt(numSquares);
         int totalY = numSquares / totalX;
         Cell[][] cells = new Cell[totalX][totalY];
 
-        // lay the mines
-        int numMinesPlacedSoFar = 0;
+        // create an empty board
         for (int x = 0; x < cells.length; x++) {
             for (int y = 0; y < cells[x].length; y++) {
-                CellType type = CellType.Blank;
-                if (numMinesPlacedSoFar != numMines) {
-                    int rand = (int) (Math.random() * 2);
-                    if (rand == 1) {
-                        type = CellType.Mine;
+                cells[x][y] = new Cell(CellType.Blank, false, false);
+            }
+        }
+
+        // lay the mines
+        int numMinesPlacedSoFar = 0;
+        while (numMinesPlacedSoFar != numMines) {
+            for (int x = 0; x < cells.length; x++) {
+                for (int y = 0; y < cells[x].length; y++) {
+                    if (numMinesPlacedSoFar == numMines) {
+                        break;
+                    }
+
+                    Cell thisCell = cells[x][y];
+                    if (thisCell.type() == CellType.Mine) {
+                        continue;
+                    }
+
+                    int rand = (int) (Math.random() * 50);
+                    if (rand % 3 == 1) {
+                        cells[x][y] = new Cell(CellType.Mine, false, false);
                         numMinesPlacedSoFar++;
                     }
                 }
 
-                cells[x][y] = new Cell(type, false, false);
+                if (numMinesPlacedSoFar == numMines) {
+                    break;
+                }
             }
         }
 
@@ -193,14 +210,16 @@ public final class Board {
         recursivelyClickSurroundingCells(x - 1, y); // left
         recursivelyClickSurroundingCells(x + 1, y + 1); // up-left        
     }
-    
+
     public String toHiddenValuesString() {
         StringBuilder cellsString = new StringBuilder();
         for (int y = 0; y < _cells[0].length; y++) {
             for (int x = 0; x < _cells.length; x++) {
                 cellsString.append(_cells[x][y].toHiddenValueString());
             }
-            cellsString.append("\n");
+            if (y != _cells[0].length - 1) {
+                cellsString.append("\n");
+            }
         }
         return cellsString.toString();
     }
@@ -214,7 +233,7 @@ public final class Board {
     public String toString() {
         int numFlags = 0;
         StringBuilder cellsString = new StringBuilder();
-        for (int y = 0; y < _cells.length; y++) {
+        for (int y = 0; y < _cells[0].length; y++) {
             for (int x = 0; x < _cells.length; x++) {
                 Cell thisCell = _cells[x][y];
                 if (thisCell.isFlagged()) {
@@ -222,13 +241,15 @@ public final class Board {
                 }
                 cellsString.append(thisCell.toString());
             }
-            cellsString.append("\n");
+            if (y != _cells[0].length - 1) {
+                cellsString.append("\n");
+            }
         }
 
         return ""
                 + "State: " + _state.toString() + "\n"
                 + "Visible Progress: " + (_numMines - numFlags) + "\n"
                 + "Actual Progress: " + (_numMines - remainingMines().size()) + "/" + _numMines + "\n"
-                + cellsString.toString() + "\n";
+                + cellsString.toString();
     }
 }
