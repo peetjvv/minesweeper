@@ -59,5 +59,37 @@ public final class Cell {
     public int number() {
         return _number;
     }
+    
+    public char toHiddenValueChar() {
+        switch (_type) {
+            case Blank:
+                return ' ';
+            case Mine:
+                return '*';
+            case Number:
+                return (char)(48 + _number);
+        }
+        
+        return '!'; // you shouldn't see this symbol
+    }
+    
+    public char toChar() {
+        if (_flagged) {
+            return '⚑';
+        }
+        if (!_clicked) {
+            return '?';
+        }
+        
+        return toHiddenValueChar();
+    }
+    
+    public String toHiddenValueString() {
+        return "[" + toHiddenValueChar() + "]";
+    }
 
+    @Override
+    public String toString() {
+        return "[" + toChar() + "]";
+    }
 }

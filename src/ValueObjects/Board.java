@@ -12,25 +12,24 @@ public final class Board {
 
     private BoardState _state;
     private Cell[][] _cells;
+    private int _numMines;
 
-    public Board(BoardState state, Cell[][] cells) {
-        this._state = state;
-        this._cells = cells;
-    }
-
-    public static Board newBoard(int numMines) {
-        int[] dimensions = getDimensionsFromNumMines(numMines);
-        Cell[][] cells = new Cell[dimensions[0]][dimensions[1]];
+    public Board(int numMines) {
+        int numSquares = numMines * 5;
+        int totalX = numSquares / 7;
+        int totalY = numSquares / totalX;
+        Cell[][] cells = new Cell[totalX][totalY];
 
         // lay the mines
-        int numMinesSoFar = 0;
+        int numMinesPlacedSoFar = 0;
         for (int x = 0; x < cells.length; x++) {
             for (int y = 0; y < cells[x].length; y++) {
                 CellType type = CellType.Blank;
-                if (numMinesSoFar != numMines) {
+                if (numMinesPlacedSoFar != numMines) {
                     int rand = (int) (Math.random() * 2);
                     if (rand == 1) {
                         type = CellType.Mine;
+                        numMinesPlacedSoFar++;
                     }
                 }
 
@@ -81,7 +80,14 @@ public final class Board {
             }
         }
 
-        return new Board(BoardState.New, cells);
+        this._state = BoardState.New;
+        this._cells = cells;
+        this._numMines = numMines;
+    }
+
+    private Board(BoardState state, Cell[][] cells, int numMines) {
+        this._state = state;
+        this._cells = cells;
     }
 
     public Board toggleFlagged(int x, int y) throws Exception {
@@ -187,15 +193,42 @@ public final class Board {
         recursivelyClickSurroundingCells(x - 1, y); // left
         recursivelyClickSurroundingCells(x + 1, y + 1); // up-left        
     }
-
-    private static int[] getDimensionsFromNumMines(int numMines) {
-        int numSquares = numMines * 10;
-        int x = numSquares / 9;
-        int y = numSquares / x;
-        return new int[]{x, y};
+    
+    public String toHiddenValuesString() {
+        StringBuilder cellsString = new StringBuilder();
+        for (int y = 0; y < _cells[0].length; y++) {
+            for (int x = 0; x < _cells.length; x++) {
+                cellsString.append(_cells[x][y].toHiddenValueString());
+            }
+            cellsString.append("\n");
+        }
+        return cellsString.toString();
     }
 
+    @Override
     public Board clone() {
-        return new Board(_state, _cells);
+        return new Board(_state, _cells, _numMines);
+    }
+
+    @Override
+    public String toString() {
+        int numFlags = 0;
+        StringBuilder cellsString = new StringBuilder();
+        for (int y = 0; y < _cells.length; y++) {
+            for (int x = 0; x < _cells.length; x++) {
+                Cell thisCell = _cells[x][y];
+                if (thisCell.isFlagged()) {
+                    numFlags++;
+                }
+                cellsString.append(thisCell.toString());
+            }
+            cellsString.append("\n");
+        }
+
+        return ""
+                + "State: " + _state.toString() + "\n"
+                + "Visible Progress: " + (_numMines - numFlags) + "\n"
+                + "Actual Progress: " + (_numMines - remainingMines().size()) + "/" + _numMines + "\n"
+                + cellsString.toString() + "\n";
     }
 }
