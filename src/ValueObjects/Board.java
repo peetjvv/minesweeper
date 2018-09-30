@@ -3,6 +3,9 @@ package ValueObjects;
 import Enums.BoardState;
 import Enums.CellType;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -30,8 +33,23 @@ public final class Board {
         // lay the mines
         int numMinesPlacedSoFar = 0;
         while (numMinesPlacedSoFar != numMines) {
-            for (int x = 0; x < cells.length; x++) {
-                for (int y = 0; y < cells[x].length; y++) {
+            ArrayList<Integer> xOrder = new ArrayList<>();
+            for (int i = 0; i < cells.length; i++) {
+                xOrder.add(i);
+            }
+            Collections.shuffle(xOrder);
+
+            for (int i = 0; i < xOrder.size(); i++) {
+                int x = xOrder.get(i);
+
+                ArrayList<Integer> yOrder = new ArrayList<>();
+                for (int j = 0; j < cells[x].length; j++) {
+                    yOrder.add(j);
+                }
+                Collections.shuffle(yOrder);
+                for (int j = 0; j < yOrder.size(); j++) {
+                    int y = yOrder.get(j);
+                    
                     if (numMinesPlacedSoFar == numMines) {
                         break;
                     }
